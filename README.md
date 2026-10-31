@@ -309,8 +309,9 @@ npm run verify:package    # publishability checks (requires a build)
 npm run probe             # integration probe against a real dsh CLI (optional)
 ```
 
-Repository layout and the interface contract live in [docs/DESIGN.md](docs/DESIGN.md); contribution
-rules live in [CONTRIBUTING.md](CONTRIBUTING.md).
+Source analysis and the DSH mapping live in [docs/ANALYSIS.md](docs/ANALYSIS.md); the interface
+contract lives in [docs/DESIGN.md](docs/DESIGN.md); contribution rules live in
+[CONTRIBUTING.md](CONTRIBUTING.md).
 
 ### Verification scripts
 
