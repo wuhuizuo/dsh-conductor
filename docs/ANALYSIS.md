@@ -1,6 +1,7 @@
 # Workspace analysis — OpenCode v2 Conductor → DSH port
 
-This note records how the original workspace (`../`, `opencode-conductor-v2`) behaves and which
+This note records how the upstream OpenCode v2 Conductor plugin
+([`wuhuizuo/opencode-conductor-v2`](https://github.com/wuhuizuo/opencode-conductor-v2)) behaves and which
 parts of it became DSH extension points. It is the evidence behind
 [`DESIGN.md`](DESIGN.md) and the release notes in [`../CHANGELOG.md`](../CHANGELOG.md).
 

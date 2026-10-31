@@ -7,7 +7,7 @@ Cordis bundle format it composes.
 
 ## 1. What is being ported
 
-The workspace source (`../` = `opencode-conductor-v2`) is the OpenCode v2 Conductor plugin.
+The upstream source ([`wuhuizuo/opencode-conductor-v2`](https://github.com/wuhuizuo/opencode-conductor-v2)) is the OpenCode v2 Conductor plugin.
 The DSH port keeps the same workflow and prompt protocols while using DSH-native extension points.
 
 | OpenCode v2 surface | DSH port |
@@ -107,17 +107,17 @@ Strict schema; unknown keys and invalid values throw at plugin load with an acti
 Port the OpenCode source content into Markdown (no JSON wrappers, no frontmatter in prompt bodies):
 
 ```
-assets/prompts/setup.md        # body of ../src/prompts/conductor/setup.json .prompt
+assets/prompts/setup.md        # body of opencode-conductor-v2/src/prompts/conductor/setup.json .prompt
 assets/prompts/newTrack.md     # ... newTrack.json
 assets/prompts/implement.md
 assets/prompts/review.md
 assets/prompts/status.md
 assets/prompts/revert.md
-assets/strategies/manual.md    # copy ../src/prompts/strategies/manual.md
-assets/strategies/delegate.md  # copy ../src/prompts/strategies/delegate.md
-assets/agent/conductor.md      # body of ../src/prompts/agent/conductor.md (strip YAML frontmatter)
-assets/templates/workflow.md   # copy ../src/templates/workflow.md
-assets/templates/code_styleguides/<name>.md  # copy all 23 from ../src/templates/code_styleguides/
+assets/strategies/manual.md    # copy opencode-conductor-v2/src/prompts/strategies/manual.md
+assets/strategies/delegate.md  # copy opencode-conductor-v2/src/prompts/strategies/delegate.md
+assets/agent/conductor.md      # body of opencode-conductor-v2/src/prompts/agent/conductor.md (strip YAML frontmatter)
+assets/templates/workflow.md   # copy opencode-conductor-v2/src/templates/workflow.md
+assets/templates/code_styleguides/<name>.md  # copy all 23 from opencode-conductor-v2/src/templates/code_styleguides/
 ```
 
 Rules:
