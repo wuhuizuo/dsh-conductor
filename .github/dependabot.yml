@@ -18,11 +18,16 @@ updates:
     labels:
       - dependencies
     groups:
-      development-dependencies:
+      npm-dev:
         dependency-type: development
         update-types:
           - minor
           - patch
+    ignore:
+      # Major upgrades are reviewed by a maintainer in a dedicated PR.
+      - dependency-name: "*"
+        update-types:
+          - version-update:semver-major
 
   - package-ecosystem: github-actions
     directory: "/"
@@ -31,9 +36,22 @@ updates:
       day: monday
       time: "06:00"
       timezone: UTC
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 3
     commit-message:
       prefix: chore
       include: scope
     labels:
       - dependencies
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+        update-types:
+          - minor
+          - patch
+    ignore:
+      # Major action bumps (checkout/setup-node/release-please) are handled in
+      # a dedicated PR after verifying the new major in CI.
+      - dependency-name: "*"
+        update-types:
+          - version-update:semver-major

@@ -356,17 +356,22 @@ npmjs.com → `@wuhuizuo/dsh-conductor` → Settings → Trusted Publisher → G
 secret is required; if you do not use trusted publishing, an `NPM_TOKEN` repository secret works as
 a fallback.
 
-**First release (bootstrap, one time):** create the baseline tag from the initial commit so
-release-please knows which commits are already released, then publish it once:
+**First release (bootstrap, one time).** The baseline tag `v0.1.0` already exists, so
+release-please knows which commits are released. npm trusted publishing can only be configured for
+a package that already exists on the registry, so the first publish needs one of these two paths:
 
-```bash
-git tag v0.1.0
-git push origin v0.1.0
-gh workflow run publish.yml -f tag=v0.1.0
-```
+- **Local token (simplest):** run `npm login`, then
+  `npm run build && npm run verify:package && npm publish --access public` in a checkout of
+  `v0.1.0`; open the package on npmjs.com → Settings → Trusted Publisher and authorize GitHub
+  Actions with organization/user `wuhuizuo`, repository `dsh-conductor`, workflow `publish.yml`.
+  Later releases then publish over OIDC with no token.
+- **CI token:** create a granular npm token with publish rights, add it as the repository secret
+  `NPM_TOKEN`, then dispatch the workflow:
+  `gh workflow run publish.yml -f tag=v0.1.0`. After the first publish, configure the trusted
+  publisher as above and delete `NPM_TOKEN`.
 
-The tag must equal the `.release-please-manifest.json` / `package.json` version (`0.1.0`). After
-that, release-please owns every subsequent version — do not tag or bump by hand.
+After the bootstrap, release-please owns every version bump — do not tag or bump by hand. The tag
+must always equal the `.release-please-manifest.json` / `package.json` version (`0.1.0` today).
 
 **Republishing an existing tag:** Actions → _Publish_ → _Run workflow_ with a tag such as `v0.1.0`
 (CLI: `gh workflow run publish.yml -f tag=v0.1.0`). Already-published versions skip the npm publish
