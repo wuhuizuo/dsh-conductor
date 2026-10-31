@@ -1,0 +1,215 @@
+name: Publish
+
+# Day-to-day releases are driven by release-please on main:
+#   1. a conventional commit lands on main;
+#   2. release-please opens/updates a "chore: release" pull request that bumps
+#      package.json and CHANGELOG.md;
+#   3. merging that pull request makes release-please create the `vX.Y.Z` tag and
+#      the GitHub release;
+#   4. the `publish` job below checks the tag out, proves the tag equals the
+#      package.json version, then publishes to npm with provenance.
+#
+# `workflow_dispatch` republishes an existing tag: the npm step is skipped when
+# the version is already published, while the GitHub release notes and the
+# installation asset are refreshed.
+#
+# npm authentication uses trusted publishing (OIDC): configure the npm package's
+# Trusted Publisher for repo `wuhuizuo/dsh-conductor`, workflow `publish.yml`.
+# No long-lived token is required; an `NPM_TOKEN` repository secret is used only
+# as an optional fallback.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing release tag to (re)publish, for example v0.1.0"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release-please:
+    name: release-please
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+      version: ${{ steps.release.outputs.version }}
+    steps:
+      - name: Run release-please
+        id: release
+        uses: googleapis/release-please-action@v4
+        with:
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+
+  publish:
+    name: publish
+    needs: release-please
+    if: |
+      always() && (
+        (github.event_name == 'workflow_dispatch' && inputs.tag != '') ||
+        needs.release-please.outputs.release_created == 'true'
+      )
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      # Create/update the GitHub release and upload the installation asset.
+      contents: write
+      # npm trusted publishing (OIDC) and provenance attestations.
+      id-token: write
+    env:
+      # Optional fallback for registries/accounts without trusted publishing.
+      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+    steps:
+      - name: Resolve the release tag
+        id: tag
+        env:
+          RESOLVED_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || needs.release-please.outputs.tag_name }}
+        run: |
+          set -euo pipefail
+          TAG="${RESOLVED_TAG}"
+          if [ -z "$TAG" ]; then
+            echo "::error::no release tag resolved; pass the --tag input or merge a release-please pull request"
+            exit 1
+          fi
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "Resolved release tag: ${TAG}"
+
+      - name: Check out the release tag
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.tag.outputs.tag }}
+          fetch-depth: 0
+
+      - name: Verify the tag matches package.json
+        env:
+          TAG: ${{ steps.tag.outputs.tag }}
+        run: |
+          set -euo pipefail
+          VERSION="${TAG#v}"
+          PKG_VERSION="$(node -p "require('./package.json').version")"
+          if [ "$PKG_VERSION" != "$VERSION" ]; then
+            echo "::error::tag ${TAG} does not match package.json version ${PKG_VERSION}; release-please must own version bumps"
+            exit 1
+          fi
+          echo "TAG=${TAG}" >> "$GITHUB_ENV"
+          echo "VERSION=${VERSION}" >> "$GITHUB_ENV"
+          echo "Publishing ${TAG} (${VERSION})"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          registry-url: "https://registry.npmjs.org"
+          cache: npm
+
+      - name: Upgrade npm for trusted publishing
+        run: npm install --global npm@latest
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      - name: Verify package contents
+        run: npm run verify:package
+
+      - name: Check whether the version is already on npm
+        id: npm_check
+        run: |
+          set -euo pipefail
+          if npm view "@wuhuizuo/dsh-conductor@${VERSION}" version >/dev/null 2>&1; then
+            echo "published=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::@wuhuizuo/dsh-conductor@${VERSION} is already published; skipping npm publish"
+          else
+            echo "published=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Publish to npm
+        if: steps.npm_check.outputs.published != 'true'
+        run: |
+          set -euo pipefail
+          # Trusted publishing (OIDC) via setup-node + id-token: write. When an
+          # NPM_TOKEN secret is configured, the project .npmrc overrides the
+          # empty placeholder that setup-node wrote, so the token is the fallback.
+          if [ -n "${NPM_TOKEN:-}" ]; then
+            npm config set //registry.npmjs.org/:_authToken "$NPM_TOKEN" --location=project
+          fi
+          npm publish --provenance --access public
+
+      - name: Pack the installation asset
+        run: |
+          set -euo pipefail
+          npm pack --json --pack-destination . \
+            | node -e "let s='';process.stdin.on('data',(d)=>s+=d).on('end',()=>console.log(JSON.parse(s)[0].filename))" \
+            > /tmp/packed.txt
+          PACKED="$(tail -n 1 /tmp/packed.txt)"
+          TGZ="wuhuizuo-dsh-conductor-${VERSION}.tgz"
+          if [ "$PACKED" != "$TGZ" ]; then
+            mv "$PACKED" "$TGZ"
+          fi
+          echo "TGZ=${TGZ}" >> "$GITHUB_ENV"
+          echo "Packed ${TGZ}"
+
+      - name: Build release notes
+        run: |
+          set -euo pipefail
+          {
+            echo "## Install"
+            echo
+            echo '```bash'
+            echo "dsh plugin --profile <profile> add @wuhuizuo/dsh-conductor@${VERSION}"
+            echo '```'
+            echo
+            echo "This installs the bundle into a DSH profile and enables it. Restart DSH, select the \"Conductor\""
+            echo "agent preset in the session preset selector, then run \`/conductor-setup\`."
+            echo
+            echo "- npm: https://www.npmjs.com/package/@wuhuizuo/dsh-conductor/v/${VERSION}"
+            echo "- Requires DSH \`>=0.2.1-rc.5 <0.3.0\` (\`engines.dsh\`) and Node.js >=22"
+            echo "- Offline alternative: download \`${TGZ}\` from this release and install it with"
+            echo "  \`dsh plugin --profile <profile> add ./${TGZ}\`"
+            echo
+            if [ -f CHANGELOG.md ]; then
+              SECTION="$(awk -v v="${VERSION}" '
+                !found && $0 ~ "^#+ (\\[)?" v "(\\]| |$)" { found=1; print; next }
+                found { if ($0 ~ "^#+ (\\[)?[0-9]+\\.[0-9]+\\.[0-9]+") exit; print }
+              ' CHANGELOG.md)"
+              if [ -n "$SECTION" ]; then
+                echo "## Changes"
+                echo
+                printf '%s\n' "$SECTION"
+              fi
+            fi
+          } > release-notes.md
+          cat release-notes.md
+
+      - name: Create or update the GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release edit "$TAG" --title "$VERSION" --notes-file release-notes.md
+            gh release upload "$TAG" "$TGZ" --clobber
+          else
+            gh release create "$TAG" "$TGZ" \
+              --verify-tag \
+              --title "$VERSION" \
+              --notes-file release-notes.md
+          fi

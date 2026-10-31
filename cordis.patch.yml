@@ -1,0 +1,11 @@
+# The conductor bundle patch: one Host plugin row that registers the six
+# `/conductor-*` human commands. The conductor agent preset is declared in
+# `presets/conductor.patch.yml`, which `dsh.bundle.patch` applies after this
+# file. Remove this row's `config` block to accept the plugin defaults
+# (`delegation: manual`); set `delegation` to `delegate` or `auto` to hand plan
+# tasks to subagents.
+- insert:
+    - id: conductor
+      name: '@wuhuizuo/dsh-conductor'
+      config:
+        delegation: manual

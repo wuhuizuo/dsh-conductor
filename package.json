@@ -1,0 +1,100 @@
+{
+  "name": "@wuhuizuo/dsh-conductor",
+  "version": "0.1.0",
+  "description": "Context-Driven Development for DeepSeek Harness: the six Conductor commands plus a conductor agent preset that enforce Context -> Spec & Plan -> Implement.",
+  "type": "module",
+  "license": "Apache-2.0",
+  "author": "wuhuizuo",
+  "contributors": [
+    "Derek Barrera (original OpenCode Conductor author)"
+  ],
+  "keywords": [
+    "dsh",
+    "deepseek-harness",
+    "conductor",
+    "plugin",
+    "bundle",
+    "context-driven-development",
+    "spec-driven-development",
+    "agent"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wuhuizuo/dsh-conductor.git"
+  },
+  "bugs": {
+    "url": "https://github.com/wuhuizuo/dsh-conductor/issues"
+  },
+  "homepage": "https://github.com/wuhuizuo/dsh-conductor#readme",
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "engines": {
+    "node": ">=22",
+    "dsh": ">=0.2.1-rc.5 <0.3.0"
+  },
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./preset": {
+      "types": "./lib/preset.d.ts",
+      "default": "./lib/preset.js"
+    },
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./presets/conductor.patch.yml": "./presets/conductor.patch.yml",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib/**/*.js",
+    "lib/**/*.d.ts",
+    "assets/prompts/*.md",
+    "assets/strategies/*.md",
+    "assets/agent/*.md",
+    "assets/templates/workflow.md",
+    "assets/templates/code_styleguides/*.md",
+    "cordis.patch.yml",
+    "presets/*.patch.yml",
+    "README.md",
+    "INSTALL.md",
+    "CHANGELOG.md",
+    "LICENSE",
+    "NOTICE",
+    "CONTRIBUTING.md"
+  ],
+  "dsh": {
+    "manifestVersion": 1,
+    "bundle": {
+      "patch": [
+        "./cordis.patch.yml",
+        "./presets/conductor.patch.yml"
+      ]
+    }
+  },
+  "scripts": {
+    "build": "rm -rf lib && tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "verify:package": "node scripts/verify-package.mjs",
+    "probe": "node scripts/integration-probe.mjs",
+    "prepublishOnly": "npm run build && npm run verify:package"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.0.0",
+    "@types/node": "^22.0.0",
+    "eslint": "^9.0.0",
+    "prettier": "^3.0.0",
+    "typescript": "^5.0.0",
+    "typescript-eslint": "^8.0.0",
+    "vitest": "^4.0.16",
+    "yaml": "^2.0.0"
+  }
+}

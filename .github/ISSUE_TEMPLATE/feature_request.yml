@@ -1,0 +1,52 @@
+name: Feature request
+description: Propose a new command behaviour, prompt capability, or configuration option.
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Conductor aims for protocol parity with the upstream OpenCode Conductor
+        plugin. Explain the workflow problem first and the proposed surface second.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What workflow is blocked or awkward today? Which command or preset behaviour is involved?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed change
+      description: Describe the user-visible behaviour, including the command name and configuration shape.
+    validations:
+      required: true
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Affected surface
+      multiple: true
+      options:
+        - Command behaviour (src/)
+        - Prompt / template text (assets/)
+        - Agent preset (presets/)
+        - Bundle configuration / plugin row (cordis.patch.yml)
+        - Verification / CI (scripts/, .github/)
+        - Documentation
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Other designs or workarounds you considered, and why they are insufficient.
+    validations:
+      required: false
+  - type: textarea
+    id: upstream
+    attributes:
+      label: Upstream parity (optional)
+      description: If this exists in the upstream OpenCode Conductor plugin, link the change so the port can stay aligned.
+    validations:
+      required: false

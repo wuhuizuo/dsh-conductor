@@ -1,0 +1,21 @@
+@wuhuizuo/dsh-conductor
+Copyright 2026 wuhuizuo
+
+This product is a DeepSeek Harness port of the OpenCode v2 Conductor plugin.
+
+The Conductor methodology, workflow protocol, prompt texts, templates, and code
+style guides are derived from opencode-conductor, an Apache-2.0 licensed project:
+
+  OpenCode Conductor
+  Copyright 2024-2026 Derek Barrera
+  https://github.com/derekbar90/opencode-conductor
+  Licensed under the Apache License, Version 2.0
+
+The DSH port (plugin runtime, agent preset, bundle manifest, verification scripts,
+and documentation) is developed in:
+
+  https://github.com/wuhuizuo/dsh-conductor
+
+This product includes software developed at the OpenCode Conductor project.
+Both the original work and this port are distributed under the Apache License,
+Version 2.0. See LICENSE for the full license text.

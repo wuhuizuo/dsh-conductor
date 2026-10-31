@@ -1,0 +1,17 @@
+# Node
+node_modules/
+lib/
+coverage/
+*.tsbuildinfo
+npm-debug.log*
+.npm/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+!.vscode/extensions.json
+
+# Local verification artifacts
+*.tgz
+.dsh-probe/
