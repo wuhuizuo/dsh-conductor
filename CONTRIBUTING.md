@@ -34,6 +34,12 @@ docs(readme): document the delegation strategies
 release-please owns both. `npm run verify:package` fails when `.release-please-manifest.json` and
 `package.json` disagree.
 
+Release mechanics: release-please opens a standalone release PR (`chore(main): release X.Y.Z`).
+Merging it makes the same workflow run create the tag and GitHub release, and the `publish` job then
+publishes to npm over OIDC trusted publishing with provenance. Do not delete the release PR branch
+before the tag exists; if a release is ever stranded, tag the version commit manually and run
+`gh workflow run publish.yml -f tag=vX.Y.Z`.
+
 ## Ownership boundaries
 
 The bundle's installable contract is split across files with different owners. Keep changes inside

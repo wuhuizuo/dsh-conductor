@@ -203,12 +203,15 @@ then `dsh verify --dump-config` must contain `@wuhuizuo/dsh-conductor`, `preset-
 
 - `.github/workflows/ci.yml`: push + PR to `main`; Node 22 and 24; `npm ci`, `lint`, `typecheck`, `test`,
   `build`, `verify:package`; no secrets required.
-- `.github/workflows/publish.yml`: push to `main` drives `googleapis/release-please-action`; when it creates a
-  release, a `publish` job checks out the tag, verifies `package.json` version equals the tag, builds, and runs
-  `npm publish --provenance --access public` with `id-token: write` (npm trusted publishing, no long-lived
-  token required; `NPM_TOKEN` secret works as an optional fallback). The GitHub release gets the
-  `@wuhuizuo/dsh-conductor-<version>.tgz` asset and install instructions. A `workflow_dispatch` entry point
-  republishes an existing tag and skips already-published versions.
+- `.github/workflows/publish.yml`: push to `main` drives `googleapis/release-please-action` with
+  `separate-pull-requests: true` so each release PR is standalone and release-please can tag it. When a release
+  PR merges, the same run creates the `vX.Y.Z` tag and GitHub release; the `publish` job then checks out the tag,
+  verifies `package.json` version equals the tag, builds, and runs `npm publish --provenance --access public`
+  with `id-token: write` (npm trusted publishing, no long-lived token; `NPM_TOKEN` is only a fallback). The
+  GitHub release gets the `wuhuizuo-dsh-conductor-<version>.tgz` asset and install instructions. A
+  `workflow_dispatch` entry point republishes an existing tag and skips already-published versions. The asset
+  step reads the filename from `npm pack --silent`, because parsing `npm pack --json` broke across npm CLI
+  versions on the runner.
 - `release-please-config.json` + `.release-please-manifest.json` (`node` release type, single package).
 - `.github/dependabot.yml` for npm + GitHub Actions; PR template; issue templates optional.
 - Documentation states the npm trusted-publisher setup (repo `wuhuizuo/dsh-conductor`, workflow `publish.yml`)

@@ -334,53 +334,48 @@ and 24 for every pull request and push to `main`.
 
 ## 🚀 Releasing
 
-Releases are automated with **release-please** and **npm trusted publishing**:
+Releases run fully automatically on `main` — no manual version bump, tag, or publish:
 
-1. Commit to `main` using [Conventional Commits](https://github.com/wuhuizuo/dsh-conductor/blob/main/CONTRIBUTING.md) (`feat:`, `fix:`, …).
-2. `release-please` (`googleapis/release-please-action@v4` in
-   [`.github/workflows/publish.yml`](https://github.com/wuhuizuo/dsh-conductor/blob/main/.github/workflows/publish.yml)) opens or updates a
-   `chore: release` pull request that bumps `package.json` and `CHANGELOG.md`.
-3. Merge that pull request. release-please creates the `vX.Y.Z` tag and the GitHub release.
-4. The `publish` job checks out the tag, verifies the tag matches the `package.json` version (it
-   never publishes a mismatched tag), re-runs tests/build/`verify:package`, publishes with
-   `npm publish --provenance --access public`, and attaches `wuhuizuo-dsh-conductor-<version>.tgz`
-   plus install instructions to the GitHub release.
+1. Commit to `main` with [Conventional Commits](https://github.com/wuhuizuo/dsh-conductor/blob/main/CONTRIBUTING.md)
+   (`feat:` / `fix:` / `perf:` produce a release; `docs:` / `chore:` / `ci:` / `test:` do not).
+2. `release-please` (`.github/workflows/publish.yml`) opens or updates a **standalone release pull
+   request** titled `chore(main): release X.Y.Z` that bumps `package.json`,
+   `.release-please-manifest.json`, `package-lock.json`, and `CHANGELOG.md`.
+3. Merge that pull request; in the same workflow run release-please creates the `vX.Y.Z` tag and the
+   GitHub release.
+4. The `publish` job checks the tag out, verifies the tag equals the `package.json` version (it never
+   publishes a mismatched tag), re-runs tests/build/`verify:package`, publishes over OIDC npm
+   trusted publishing (`npm publish --provenance --access public`, no long-lived token), and attaches
+   `wuhuizuo-dsh-conductor-<version>.tgz` plus install instructions to the GitHub release.
 
-Configuration files live at the repository root, which is where the action reads them by default:
+The pipeline is verified end to end: `0.1.0` was bootstrapped manually, and `0.1.1` / `0.1.2` were
+released and published by automation with SLSA provenance.
 
-- `release-please-config.json` — `node` release type, single root package;
+Rules for maintainers:
+
+- Never bump versions, edit released `CHANGELOG.md` sections, or create release tags by hand;
+  release-please owns all of them.
+- A release needs a user-facing commit. If a change is workflow- or docs-only, expect no release.
+- The release PR must keep its `autorelease: pending` label until release-please tags it; the
+  workflow run that creates the tag swaps it to `autorelease: tagged`.
+- Recovery: if a release PR is merged but its tag was not created, tag the version commit
+  (`git tag vX.Y.Z <sha> && git push origin vX.Y.Z`) and dispatch the Publish workflow for that tag;
+  release-please resumes normally from the tag.
+
+Configuration files live at the repository root:
+
+- `release-please-config.json` — `node` release type, standalone release pull requests,
+  `include-component-in-tag: false`;
 - `.release-please-manifest.json` — released version tracker.
 
-**npm prerequisite (one time):** the package's Trusted Publisher must point at this repository:
-npmjs.com → `@wuhuizuo/dsh-conductor` → Settings → Trusted Publisher → GitHub Actions, organization
-`wuhuizuo`, repository `dsh-conductor`, workflow `publish.yml` (environment: none). No `NPM_TOKEN`
-secret is required; if you do not use trusted publishing, an `NPM_TOKEN` repository secret works as
-a fallback.
+**Trusted publisher (already configured):** npmjs.com → `@wuhuizuo/dsh-conductor` → Settings →
+Trusted Publisher → GitHub Actions, organization/user `wuhuizuo`, repository `dsh-conductor`,
+workflow `publish.yml` (no environment). `NPM_TOKEN` is not used; the workflow keeps an optional
+`NPM_TOKEN` secret only as a fallback for accounts without trusted publishing.
 
-**First release (bootstrap, one time).** The baseline tag `v0.1.0` already exists, so
-release-please knows which commits are released. npm trusted publishing can only be configured for
-a package that already exists on the registry, so the first publish needs one of these two paths:
-
-- **Local token (simplest):** run `npm login`, then
-  `npm run build && npm run verify:package && npm publish --access public` in a checkout of
-  `v0.1.0`; open the package on npmjs.com → Settings → Trusted Publisher and authorize GitHub
-  Actions with organization/user `wuhuizuo`, repository `dsh-conductor`, workflow `publish.yml`.
-  Later releases then publish over OIDC with no token.
-- **CI token:** create a granular npm token with publish rights, add it as the repository secret
-  `NPM_TOKEN`, then dispatch the workflow:
-  `gh workflow run publish.yml -f tag=v0.1.0`. After the first publish, configure the trusted
-  publisher as above and delete `NPM_TOKEN`.
-
-After the bootstrap, release-please owns every version bump — do not tag or bump by hand. The tag
-must always equal the `.release-please-manifest.json` / `package.json` version (`0.1.0` today).
-
-**Republishing an existing tag:** Actions → _Publish_ → _Run workflow_ with a tag such as `v0.1.0`
-(CLI: `gh workflow run publish.yml -f tag=v0.1.0`). Already-published versions skip the npm publish
+**Republishing an existing tag:** Actions → _Publish_ → _Run workflow_ with a tag such as `v0.1.2`
+(CLI: `gh workflow run publish.yml -f tag=v0.1.2`). Already-published versions skip the npm publish
 step while the GitHub release notes and asset are refreshed.
-
-`CHANGELOG.md` is owned by release-please — do not edit released sections by hand.
-
----
 
 ## 📜 License and attribution
 
