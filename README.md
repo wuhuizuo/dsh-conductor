@@ -107,7 +107,7 @@ npm pack
 dsh plugin --profile web add "$PWD/wuhuizuo-dsh-conductor-0.1.0.tgz"
 ```
 
-See [INSTALL.md](INSTALL.md) for a step-by-step guide, uninstalling, and troubleshooting.
+See [INSTALL.md](https://github.com/wuhuizuo/dsh-conductor/blob/main/INSTALL.md) for a step-by-step guide, uninstalling, and troubleshooting.
 
 ---
 
@@ -309,9 +309,9 @@ npm run verify:package    # publishability checks (requires a build)
 npm run probe             # integration probe against a real dsh CLI (optional)
 ```
 
-Source analysis and the DSH mapping live in [docs/ANALYSIS.md](docs/ANALYSIS.md); the interface
-contract lives in [docs/DESIGN.md](docs/DESIGN.md); contribution rules live in
-[CONTRIBUTING.md](CONTRIBUTING.md).
+Source analysis and the DSH mapping live in [docs/ANALYSIS.md](https://github.com/wuhuizuo/dsh-conductor/blob/main/docs/ANALYSIS.md); the interface
+contract lives in [docs/DESIGN.md](https://github.com/wuhuizuo/dsh-conductor/blob/main/docs/DESIGN.md); contribution rules live in
+[CONTRIBUTING.md](https://github.com/wuhuizuo/dsh-conductor/blob/main/CONTRIBUTING.md).
 
 ### Verification scripts
 
@@ -336,9 +336,9 @@ and 24 for every pull request and push to `main`.
 
 Releases are automated with **release-please** and **npm trusted publishing**:
 
-1. Commit to `main` using [Conventional Commits](CONTRIBUTING.md) (`feat:`, `fix:`, …).
+1. Commit to `main` using [Conventional Commits](https://github.com/wuhuizuo/dsh-conductor/blob/main/CONTRIBUTING.md) (`feat:`, `fix:`, …).
 2. `release-please` (`googleapis/release-please-action@v4` in
-   [`.github/workflows/publish.yml`](.github/workflows/publish.yml)) opens or updates a
+   [`.github/workflows/publish.yml`](https://github.com/wuhuizuo/dsh-conductor/blob/main/.github/workflows/publish.yml)) opens or updates a
    `chore: release` pull request that bumps `package.json` and `CHANGELOG.md`.
 3. Merge that pull request. release-please creates the `vX.Y.Z` tag and the GitHub release.
 4. The `publish` job checks out the tag, verifies the tag matches the `package.json` version (it
@@ -384,7 +384,7 @@ step while the GitHub release notes and asset are refreshed.
 
 ## 📜 License and attribution
 
-Apache License 2.0 — see [LICENSE](LICENSE) and [NOTICE](NOTICE).
+Apache License 2.0 — see [LICENSE](https://github.com/wuhuizuo/dsh-conductor/blob/main/LICENSE) and [NOTICE](https://github.com/wuhuizuo/dsh-conductor/blob/main/NOTICE).
 
 - Original OpenCode Conductor: **Derek Barrera**,
   [derekbar90/opencode-conductor](https://github.com/derekbar90/opencode-conductor), Apache-2.0.
