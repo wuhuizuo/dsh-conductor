@@ -156,16 +156,20 @@ jobs:
       - name: Pack the installation asset
         run: |
           set -euo pipefail
-          npm pack --json --pack-destination . \
-            | node -e "let s='';process.stdin.on('data',(d)=>s+=d).on('end',()=>console.log(JSON.parse(s)[0].filename))" \
-            > /tmp/packed.txt
-          PACKED="$(tail -n 1 /tmp/packed.txt)"
+          # `npm pack --silent` prints the tarball filename and nothing else;
+          # parsing `--json` output broke when newer npm CLI versions changed
+          # the shape/prelude of that document on the runner.
+          PACKED="$(npm pack --silent --pack-destination . | tail -n 1)"
+          if [ -z "$PACKED" ] || [ ! -f "$PACKED" ]; then
+            echo "::error::npm pack did not report a tarball"
+            exit 1
+          fi
           TGZ="wuhuizuo-dsh-conductor-${VERSION}.tgz"
           if [ "$PACKED" != "$TGZ" ]; then
             mv "$PACKED" "$TGZ"
           fi
           echo "TGZ=${TGZ}" >> "$GITHUB_ENV"
-          echo "Packed ${TGZ}"
+          echo "Packed ${TGZ} ($(wc -c < "$TGZ") bytes)"
 
       - name: Build release notes
         run: |
