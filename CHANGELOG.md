@@ -6,6 +6,13 @@ This file is maintained by [release-please](https://github.com/googleapis/releas
 Conventional Commits on `main`, proposes the next version, and writes the release section when the
 release pull request is merged. Do not edit released sections by hand.
 
+## [0.1.1](https://github.com/wuhuizuo/dsh-conductor/compare/v0.1.0...v0.1.1) (2026-10-31)
+
+
+### Bug Fixes
+
+* resolve README links on the npm package page ([3383f53](https://github.com/wuhuizuo/dsh-conductor/commit/3383f538dfec57abbf1e670badbb9081fdcde5b0))
+
 ## 0.1.0 (2026-10-31)
 
 ### Features
