@@ -6,6 +6,13 @@ This file is maintained by [release-please](https://github.com/googleapis/releas
 Conventional Commits on `main`, proposes the next version, and writes the release section when the
 release pull request is merged. Do not edit released sections by hand.
 
+## [0.2.0](https://github.com/wuhuizuo/dsh-conductor/compare/v0.1.0...v0.2.0) (2026-10-31)
+
+
+### Features
+
+* port Conductor to DeepSeek Harness ([a1a639a](https://github.com/wuhuizuo/dsh-conductor/commit/a1a639a1b9c5095f91cada8b86ffd0b3b043249a))
+
 ## 0.1.0 (2026-10-31)
 
 ### Features
