@@ -1,4 +1,5 @@
 import { renderEnvironment, type ProjectContext } from "./context.js";
+import { INTERACTION_CONTRACT } from "./interaction.js";
 
 /** Placeholder replaced with the trimmed raw command input. */
 export const ARGUMENTS_PLACEHOLDER = "{{args}}";
@@ -25,8 +26,8 @@ export interface CommandCompositionInput {
 /**
  * Compose the text dispatched for one conductor command:
  * template with placeholders resolved, optional strategy guidance, optional raw
- * user arguments (only when the template has no `{{args}}` placeholder), then
- * the execution-time environment block.
+ * user arguments (only when the template has no `{{args}}` placeholder), the
+ * execution-time environment block, then the shared interaction contract.
  *
  * Pure function: the message ends with exactly one newline.
  */
@@ -49,6 +50,7 @@ export function composeCommandText(input: CommandCompositionInput): string {
   }
 
   sections.push(renderEnvironment(input.context));
+  sections.push(INTERACTION_CONTRACT);
 
   return `${sections.join(SECTION_SEPARATOR)}\n`;
 }

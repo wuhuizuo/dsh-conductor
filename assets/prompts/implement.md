@@ -33,29 +33,35 @@ CRITICAL: You must validate the success of every tool call. If any tool call fai
 4.  **Select Track:**
     -   **If a track name was provided:**
         1.  Perform an exact, case-insensitive match for the provided name against the track descriptions you parsed.
-        2.  If a unique match is found, immediately call the `ask_user_question` tool to confirm the selection (do not repeat the question in the chat):
+        2.  If a unique match is found, immediately call the `ask_user_question` tool to confirm the selection:
             - **questions:**
+                - **id:** "confirm-track"
                 - **header:** "Confirm"
                 - **question:** "I found track '<track_description>'. Is this correct?"
-                - **type:** "yesno"
-        3.  If no match is found, or if the match is ambiguous, immediately call the `ask_user_question` tool to inform the user and request the correct track name (do not repeat the question in the chat):
+                - **options:**
+                    - Label: "Yes, use this track (Recommended)", Description: "Start implementing this track."
+                    - Label: "No, choose another", Description: "I will name the correct track."
+        3.  If no match is found, or if the match is ambiguous, immediately call the `ask_user_question` tool to request the correct track name:
             - **questions:**
+                - **id:** "clarify-track"
                 - **header:** "Clarify"
-                - **question:** "I couldn't find a unique track matching the name you provided. Did you mean '<next_available_track>'? Or please type the exact track name."
-                - **type:** "text"
+                - **question:** "Which track do you want? Did you mean '<next_available_track>'?"
     -   **If no track name was provided (or if the previous step failed):**
         1.  **Identify Next Track:** Find the first track in the parsed tracks file that is NOT marked as `[x] Completed`.
         2.  **If a next track is found:**
-            -   Immediately call the `ask_user_question` tool to confirm the selection (do not repeat the question in the chat):
+            -   Immediately call the `ask_user_question` tool to confirm the selection:
                 - **questions:**
+                    - **id:** "confirm-next-track"
                     - **header:** "Next Track"
-                    - **question:** "No track name provided. Would you like to proceed with the next incomplete track: '<track_description>'?"
-                    - **type:** "yesno"
-            -   If confirmed, proceed with this track. Otherwise, immediately call the `ask_user_question` tool to request the correct track name (do not repeat the question in the chat):
+                    - **question:** "Proceed with the next incomplete track: '<track_description>'?"
+                    - **options:**
+                        - Label: "Yes, proceed (Recommended)", Description: "Start this track."
+                        - Label: "No, choose another", Description: "I will name the track to implement."
+            -   If confirmed, proceed with this track. Otherwise, immediately call the `ask_user_question` tool to request the correct track name:
                 - **questions:**
+                    - **id:** "clarify-track"
                     - **header:** "Clarify"
-                    - **question:** "Please type the exact name of the track you would like to implement."
-                    - **type:** "text"
+                    - **question:** "What is the exact name of the track you want to implement?"
         3.  **If no incomplete tracks are found:**
             -   Announce: "No incomplete tracks found in the tracks file. All tasks are completed!"
             -   Halt the process and await further user instructions.
@@ -85,7 +91,7 @@ CRITICAL: You must validate the success of every tool call. If any tool call fai
     b. **Iterate Through Tasks:** You MUST now loop through each task in the track's **Implementation Plan** one by one.
     c. **For Each Task, You MUST:**
         i. **Defer to Workflow:** The **Workflow** file is the **single source of truth** for the entire task lifecycle. You MUST now read and execute the procedures defined in the "Task Workflow" section of the **Workflow** file you have in your context. Follow its steps for implementation, testing, and committing precisely.
-           - **CRITICAL:** Every human-in-the-loop interaction, confirmation, or request for feedback mentioned in the **Workflow** (e.g., manual verification plans or guidance on persistent failures) MUST be conducted using the `ask_user_question` tool.
+           - **CRITICAL:** Every human-in-the-loop interaction, confirmation, or request for feedback mentioned in the **Workflow** (e.g., manual verification plans or guidance on persistent failures) MUST be conducted using the `ask_user_question` tool. Present verification steps and evidence in the chat first; the card only asks the short decision.
 
 5.  **Finalize Track:**
     -   After all tasks in the track's local **Implementation Plan** are completed, you MUST update the track's status in the **Tracks Registry**.
@@ -115,48 +121,45 @@ CRITICAL: You must validate the success of every tool call. If any tool call fai
     b.  **Update Product Definition:**
         i. **Condition for Update:** Based on your analysis, you MUST determine if the completed feature or bug fix significantly impacts the description of the product itself.
         ii. **Propose and Confirm Changes:** If an update is needed:
-            -   **Announce:** Briefly state that updates are proposed. Do NOT repeat the request to review in the chat.
-            -   **Ask for Approval:** Use the `ask_user_question` tool to request confirmation. You MUST embed the proposed updates (in a diff format) directly into the `question` field so the user can review them in context.
+            -   **Announce:** Briefly state that updates are proposed.
+            -   **Present the Diff:** In a normal Markdown assistant message, show the proposed updates to the **Product Definition** as a fenced `diff` block (or write them to a file and give the path if they are longer than one screen).
+            -   **Ask for Approval:** Call the `ask_user_question` tool with one short question.
                 - **questions:**
+                    - **id:** "approve-product-update"
                     - **header:** "Product"
-                    - **question:**
-                        Please review the proposed updates to the Product Definition below. Do you approve?
-
-                        ---
-
-                        <Insert Proposed product.md Updates/Diff Here>
-                    - **type:** "yesno"
+                    - **question:** "Apply the proposed `product.md` changes shown above?"
+                    - **options:**
+                        - Label: "Apply (Recommended)", Description: "Edit the Product Definition."
+                        - Label: "Skip", Description: "Leave the file unchanged."
         iii. **Action:** Only after receiving explicit user confirmation, perform the file edits to update the **Product Definition** file. Keep a record of whether this file was changed.
     c.  **Update Tech Stack:**
         i. **Condition for Update:** Similarly, you MUST determine if significant changes in the technology stack are detected as a result of the completed track.
         ii. **Propose and Confirm Changes:** If an update is needed:
-            -   **Announce:** Briefly state that updates are proposed. Do NOT repeat the request to review in the chat.
-            -   **Ask for Approval:** Use the `ask_user_question` tool to request confirmation. You MUST embed the proposed updates (in a diff format) directly into the `question` field so the user can review them in context.
+            -   **Announce:** Briefly state that updates are proposed.
+            -   **Present the Diff:** In a normal Markdown assistant message, show the proposed **Tech Stack** updates as a fenced `diff` block (or write them to a file and give the path if they are longer than one screen).
+            -   **Ask for Approval:** Call the `ask_user_question` tool with one short question.
                 - **questions:**
+                    - **id:** "approve-tech-stack-update"
                     - **header:** "Tech Stack"
-                    - **question:**
-                        Please review the proposed updates to the Tech Stack below. Do you approve?
-
-                        ---
-
-                        <Insert Proposed tech-stack.md Updates/Diff Here>
-                    - **type:** "yesno"
+                    - **question:** "Apply the proposed `tech-stack.md` changes shown above?"
+                    - **options:**
+                        - Label: "Apply (Recommended)", Description: "Edit the Tech Stack."
+                        - Label: "Skip", Description: "Leave the file unchanged."
         iii. **Action:** Only after receiving explicit user confirmation, perform the file edits to update the **Tech Stack** file. Keep a record of whether this file was changed.
     d. **Update Product Guidelines (Strictly Controlled):**
         i. **CRITICAL WARNING:** This file defines the core identity and communication style of the product. It should be modified with extreme caution and ONLY in cases of significant strategic shifts, such as a product rebrand or a fundamental change in user engagement philosophy. Routine feature updates or bug fixes should NOT trigger changes to this file.
         ii. **Condition for Update:** You may ONLY propose an update to this file if the track's **Specification** explicitly describes a change that directly impacts branding, voice, tone, or other core product guidelines.
         iii. **Propose and Confirm Changes:** If the conditions are met:
-            -   **Announce:** Briefly state that updates are proposed. Do NOT repeat the request to review in the chat.
-            -   **Ask for Approval:** Use the `ask_user_question` tool to request confirmation. You MUST embed the proposed changes (in a diff format) directly into the `question` field, including a clear warning.
+            -   **Announce:** Briefly state that updates are proposed.
+            -   **Present the Diff:** In a normal Markdown assistant message, show a clear warning and the proposed **Product Guidelines** changes as a fenced `diff` block (or write them to a file and give the path if they are longer than one screen).
+            -   **Ask for Approval:** Call the `ask_user_question` tool with one short question.
                 - **questions:**
+                    - **id:** "approve-guidelines-update"
                     - **header:** "Product"
-                    - **question:**
-                        WARNING: This is a sensitive action as it impacts core product guidelines. Please review the proposed changes below. Do you approve these critical changes?
-
-                        ---
-
-                        <Insert Proposed product-guidelines.md Updates/Diff Here>
-                    - **type:** "yesno"
+                    - **question:** "Apply these sensitive `product-guidelines.md` changes shown above?"
+                    - **options:**
+                        - Label: "Apply (Recommended)", Description: "Edit the core product guidelines."
+                        - Label: "Skip", Description: "Leave the file unchanged."
         iv. **Action:** Only after receiving explicit user confirmation, perform the file edits. Keep a record of whether this file was changed.
 
 6.  **Final Report:** Announce the completion of the synchronization process and provide a summary of the actions taken.
@@ -179,17 +182,16 @@ CRITICAL: You must validate the success of every tool call. If any tool call fai
 
 1.  **Execution Trigger:** This protocol MUST only be executed after the current track has been successfully implemented and the `SYNCHRONIZE PROJECT DOCUMENTATION` step is complete.
 
-2.  **Ask for User Choice:** Immediately call the `ask_user_question` tool to prompt the user (do not repeat the question in the chat):
+2.  **Ask for User Choice:** Immediately call the `ask_user_question` tool to prompt the user:
     - **questions:**
+        - **id:** "track-cleanup"
         - **header:** "Track Cleanup"
-        - **question:** "Track '<track_description>' is now complete. What would you like to do?"
-        - **type:** "choice"
-        - **multiSelect:** false
+        - **question:** "Track '<track_description>' is complete. What next?"
         - **options:**
-            - Label: "Review", Description: "Run the review command to verify changes before finalizing."
-            - Label: "Archive", Description: "Move the track's folder to `conductor/archive/` and remove it from the tracks file."
-            - Label: "Delete", Description: "Permanently delete the track's folder and remove it from the tracks file."
-            - Label: "Skip", Description: "Do nothing and leave it in the tracks file."
+            - Label: "Review (Recommended)", Description: "Run the review command before finalizing."
+            - Label: "Archive", Description: "Move the folder to `conductor/archive/` and update the tracks file."
+            - Label: "Delete", Description: "Permanently delete the folder and update the tracks file."
+            - Label: "Skip", Description: "Leave it in the tracks file."
 
 3.  **Handle User Response:**
     *   **If user chooses "Review":**
@@ -201,11 +203,14 @@ CRITICAL: You must validate the success of every tool call. If any tool call fai
         iv.  **Commit Changes:** Stage the **Tracks Registry** file and `conductor/archive/`. Commit with the message `chore(conductor): Archive track '<track_description>'`.
         v.   **Announce Success:** Announce: "Track '<track_description>' has been successfully archived."
     *   **If user chooses "Delete":**
-        i. **CRITICAL WARNING:** Before proceeding, immediately call the `ask_user_question` tool to ask for final confirmation (do not repeat the warning in the chat):
+        i. **CRITICAL WARNING:** Before proceeding, immediately call the `ask_user_question` tool to ask for final confirmation:
             - **questions:**
+                - **id:** "confirm-delete-track"
                 - **header:** "Confirm"
-                - **question:** "WARNING: This will permanently delete the track folder and all its contents. This action cannot be undone. Are you sure?"
-                - **type:** "yesno"
+                - **question:** "Permanently delete the track folder? This cannot be undone."
+                - **options:**
+                    - Label: "No, keep it (Recommended)", Description: "Cancel the deletion."
+                    - Label: "Yes, delete it", Description: "Delete the folder and update the tracks file."
         ii. **Handle Confirmation:**
             - **If 'yes'**:
                 a. **Delete Track Folder:** Resolve the **Tracks Directory** and permanently delete the track's folder from `<Tracks Directory>/<track_id>`.

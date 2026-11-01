@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { composeCommandText, type CommandCompositionInput } from "./compose.js";
 import type { ProjectContext } from "./context.js";
+import { INTERACTION_CONTRACT } from "./interaction.js";
 
 const context: ProjectContext = {
   directory: "/work/project",
@@ -96,6 +97,14 @@ describe("composeCommandText", () => {
     expect(strategyIndex).toBeLessThan(strategyBodyIndex);
     expect(strategyBodyIndex).toBeLessThan(argumentsIndex);
     expect(argumentsIndex).toBeLessThan(environmentIndex);
+  });
+
+  it("appends the interaction contract after the environment block", () => {
+    const text = compose();
+
+    expect(text).toContain(INTERACTION_CONTRACT);
+    expect(text.indexOf("Environment Details:")).toBeLessThan(text.indexOf("## Interaction Contract"));
+    expect(text.endsWith(`${INTERACTION_CONTRACT}\n`)).toBe(true);
   });
 
   it("places the strategy section after a template that resolves placeholders", () => {

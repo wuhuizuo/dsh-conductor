@@ -67,9 +67,13 @@ CRITICAL: When determining model complexity, ALWAYS select the "flash" model, re
             -   **1.0 Pre-analysis Confirmation:**
                 1.  **Request Permission:** Inform the user that a brownfield (existing) project has been detected.
                 2.  **Ask for Permission:** Request permission for a read-only scan to analyze the project using the `ask_user_question` tool:
-                    - **header:** "Permission"
-                    - **question:** "A brownfield (existing) project has been detected. May I perform a read-only scan to analyze the project?"
-                    - **type:** "yesno"
+                    - **questions:**
+                        - **id:** "brownfield-scan"
+                        - **header:** "Permission"
+                        - **question:** "May I run a read-only scan of this existing project?"
+                        - **options:**
+                            - Label: "Yes, scan the project (Recommended)", Description: "Read-only analysis; no files are changed."
+                            - Label: "No, skip the scan", Description: "Stop setup until you decide."
                 3.  **Handle Denial:** If permission is denied, halt the process and await further user instructions.
                 4.  **Confirmation:** Upon confirmation, proceed to the next step.
 
@@ -103,10 +107,10 @@ CRITICAL: When determining model complexity, ALWAYS select the "flash" model, re
 
 4.  **Inquire about Project Goal (for Greenfield):**
     -   **Ask the user the following question using the `ask_user_question` tool and wait for their response before proceeding to the next step:**
-        - **header:** "Project Goal"
-        - **type:** "text"
-        - **question:** "What do you want to build?"
-        - **placeholder:** "e.g., A mobile app for tracking expenses"
+        - **questions:**
+            - **id:** "project-goal"
+            - **header:** "Project Goal"
+            - **question:** "What do you want to build?"
     -   **CRITICAL: You MUST NOT execute any tool calls until the user has provided a response.**
     -   **Upon receiving the user's response:**
         -   Execute `mkdir -p conductor`.
@@ -120,13 +124,12 @@ CRITICAL: When determining model complexity, ALWAYS select the "flash" model, re
 1.  **Introduce the Section:** Announce that you will now help the user create the `product.md`.
 2.  **Determine Mode:** Use the `ask_user_question` tool to let the user choose their preferred workflow.
     - **questions:**
+        - **id:** "product-mode"
         - **header:** "Product"
-        - **question:** "How would you like to define the product details? Whether you prefer a quick start or a deep dive, both paths lead to a high-quality product guide!"
-        - **type:** "choice"
-        - **multiSelect:** false
+        - **question:** "How would you like to define the product details?"
         - **options:**
-            - Label: "Interactive", Description: "I'll guide you through a series of questions to refine your vision."
-            - Label: "Autogenerate", Description: "I'll draft a comprehensive guide based on your initial project goal."
+            - Label: "Interactive (Recommended)", Description: "I'll guide you through questions to refine your vision."
+            - Label: "Autogenerate", Description: "I'll draft a guide from your initial project goal."
 
 3.  **Gather Information (Conditional):**
     -   **If user chose "Autogenerate":** Skip this step and proceed directly to **Step 4 (Draft the Document)**.
@@ -134,33 +137,27 @@ CRITICAL: When determining model complexity, ALWAYS select the "flash" model, re
         -   **CRITICAL:** Batch up to 4 questions in this single tool call to streamline the process.
         -   **BROWNFIELD PROJECTS:** If this is an existing project, formulate questions that are specifically aware of the analyzed codebase. Do not ask generic questions if the answer is already in the files.
         -   **SUGGESTIONS:** For each question, generate 3 high-quality suggested answers based on common patterns or context.
-        -   **Formulation Guidelines:** Construct the `questions` array where each object has:
+        -   **Formulation Guidelines:** Each entry in the `questions` array has:
+            - **id:** A unique, stable identifier within this call.
             - **header:** Very short label (max 16 chars).
-            - **type:** "choice".
-            - **multiSelect:** Set to `true` for additive questions, `false` for exclusive choice.
-            - **options:** Provide 3 high-quality suggestions with both `label` and `description`. Do NOT include an "Autogenerate" option here.
-            - **Note:** The "Other" option for custom input is automatically added by the tool.
+            - **question:** One or two sentences.
+            - **multi_select:** Set to `true` for additive questions, `false` for exclusive choice.
+            - **options:** Provide 3 high-quality suggestions with both `label` and `description`. Put the recommended option first and append `(Recommended)` to its label. Do NOT include an "Autogenerate" option here.
         -   **Interaction Flow:** Wait for the user's response, then proceed to the next step.
 
 4.  **Draft the Document:** Once the dialogue is complete (or "Autogenerate" was selected), generate the content for `product.md`.
     -   **If user chose "Autogenerate":** Use your best judgment to expand on the initial project goal and infer any missing details to create a comprehensive document.
     -   **If user chose "Interactive":** Use the specific answers provided. The source of truth is **only the user's selected answer(s)**. You are encouraged to expand on these choices to create a polished output.
 5.  **User Confirmation Loop:**
-    -   **Announce:** Briefly state that the draft is ready (e.g., "Draft generated."). Do NOT repeat the request to "review" or "approve" in the chat.
-    -   **Ask for Approval:** Use the `ask_user_question` tool to request confirmation. You MUST embed the drafted content directly into the `question` field so the user can review it in context.
+    -   **Present the Draft:** In a normal Markdown assistant message, show the complete drafted `product.md` content (or a short outline plus a file path if it is longer than one screen).
+    -   **Ask for Approval:** Call the `ask_user_question` tool with one short question.
         - **questions:**
+            - **id:** "approve-product"
             - **header:** "Review"
-            - **question:**
-                Please review the drafted Product Guide below. What would you like to do next?
-
-                ---
-
-                <Insert Drafted product.md Content Here>
-            - **type:** "choice"
-            - **multiSelect:** false
+            - **question:** "Approve the drafted `product.md` shown above?"
             - **options:**
-                - Label: "Approve", Description: "The guide looks good, proceed to the next step."
-                - Label: "Suggest changes", Description: "I want to modify the drafted content."
+                - Label: "Approve (Recommended)", Description: "Write the draft and continue."
+                - Label: "Revise", Description: "I want changes; describe them in the custom answer."
 6.  **Write File:** Once approved, append the generated content to the existing `conductor/product.md` file, preserving the `# Initial Concept` section.
 7.  **Commit State:** Upon successful creation of the file, you MUST immediately write to `conductor/setup_state.json` with the exact content:
     `{"last_successful_step": "2.1_product_guide"}`
@@ -170,12 +167,11 @@ CRITICAL: When determining model complexity, ALWAYS select the "flash" model, re
 1.  **Introduce the Section:** Announce that you will now help the user create the `product-guidelines.md`.
 2.  **Determine Mode:** Use the `ask_user_question` tool to let the user choose their preferred workflow.
     - **questions:**
+        - **id:** "guidelines-mode"
         - **header:** "Product"
-        - **question:** "How would you like to define the product guidelines? You can hand-pick the style or let me generate a standard set."
-        - **type:** "choice"
-        - **multiSelect:** false
+        - **question:** "How would you like to define the product guidelines?"
         - **options:**
-            - Label: "Interactive", Description: "I'll ask you about prose style, branding, and UX principles."
+            - Label: "Interactive (Recommended)", Description: "I'll ask about prose style, branding, and UX principles."
             - Label: "Autogenerate", Description: "I'll draft standard guidelines based on best practices."
 
 3.  **Gather Information (Conditional):**
@@ -184,33 +180,27 @@ CRITICAL: When determining model complexity, ALWAYS select the "flash" model, re
         -   **CRITICAL:** Batch up to 4 questions in this single tool call to streamline the process.
         -   **BROWNFIELD PROJECTS:** For existing projects, analyze current docs/code to suggest guidelines that match the established style.
         -   **SUGGESTIONS:** For each question, generate 3 high-quality suggested answers based on common patterns or context.
-        -   **Formulation Guidelines:** Construct the `questions` array where each object has:
+        -   **Formulation Guidelines:** Each entry in the `questions` array has:
+            - **id:** A unique, stable identifier within this call.
             - **header:** Very short label (max 16 chars).
-            - **type:** "choice".
-            - **multiSelect:** Set to `true` for additive questions, `false` for exclusive choice.
-            - **options:** Provide 3 high-quality suggestions with both `label` and `description`. Do NOT include an "Autogenerate" option here.
-            - **Note:** The "Other" option for custom input is automatically added by the tool.
+            - **question:** One or two sentences.
+            - **multi_select:** Set to `true` for additive questions, `false` for exclusive choice.
+            - **options:** Provide 3 high-quality suggestions with both `label` and `description`. Put the recommended option first and append `(Recommended)` to its label. Do NOT include an "Autogenerate" option here.
         -   **Interaction Flow:** Wait for the user's response, then proceed to the next step.
 
 4.  **Draft the Document:** Once the dialogue is complete (or "Autogenerate" was selected), generate the content for `product-guidelines.md`.
     -   **If user chose "Autogenerate":** Use your best judgment to infer standard, high-quality guidelines suitable for the project type.
     -   **If user chose "Interactive":** Use the specific answers provided. The source of truth is **only the user's selected answer(s)**. You are encouraged to expand on these choices to create a polished output.
 5.  **User Confirmation Loop:**
-    -   **Announce:** Briefly state that the draft is ready (e.g., "Draft generated."). Do NOT repeat the request to "review" or "approve" in the chat.
-    -   **Ask for Approval:** Use the `ask_user_question` tool to request confirmation. You MUST embed the drafted content directly into the `question` field so the user can review it in context.
+    -   **Present the Draft:** In a normal Markdown assistant message, show the complete drafted `product-guidelines.md` content (or a short outline plus a file path if it is longer than one screen).
+    -   **Ask for Approval:** Call the `ask_user_question` tool with one short question.
         - **questions:**
+            - **id:** "approve-guidelines"
             - **header:** "Review"
-            - **question:**
-                Please review the drafted Product Guidelines below. What would you like to do next?
-
-                ---
-
-                <Insert Drafted product-guidelines.md Content Here>
-            - **type:** "choice"
-            - **multiSelect:** false
+            - **question:** "Approve the drafted `product-guidelines.md` shown above?"
             - **options:**
-                - Label: "Approve", Description: "The guidelines look good, proceed to the next step."
-                - Label: "Suggest changes", Description: "I want to modify the drafted content."
+                - Label: "Approve (Recommended)", Description: "Write the guidelines and continue."
+                - Label: "Revise", Description: "I want changes; describe them in the custom answer."
 6.  **Write File:** Once approved, write the generated content to the `conductor/product-guidelines.md` file.
 7.  **Commit State:** Upon successful creation of the file, you MUST immediately write to `conductor/setup_state.json` with the exact content:
     `{"last_successful_step": "2.2_product_guidelines"}`
@@ -221,54 +211,50 @@ CRITICAL: When determining model complexity, ALWAYS select the "flash" model, re
 2.  **Determine Mode:**
     -   **FOR GREENFIELD PROJECTS:** Use the `ask_user_question` tool to choose the workflow.
         - **questions:**
+            - **id:** "tech-stack-mode"
             - **header:** "Tech Stack"
-            - **question:** "How would you like to define the technology stack? I can recommend a proven stack for your goal or you can hand-pick each component."
-            - **type:** "choice"
-            - **multiSelect:** false
+            - **question:** "How would you like to define the technology stack?"
             - **options:**
-                - Label: "Interactive", Description: "I'll ask you to select the language, frameworks, and database."
-                - Label: "Autogenerate", Description: "I'll recommend a standard tech stack based on your project goal."
+                - Label: "Interactive (Recommended)", Description: "I'll ask you to select the language, frameworks, and database."
+                - Label: "Autogenerate", Description: "I'll recommend a standard stack based on your project goal."
     -   **FOR BROWNFIELD PROJECTS:**
         -   **CRITICAL WARNING:** Your goal is to document the project's *existing* tech stack, not to propose changes.
         -   **State the Inferred Stack:** Based on the code analysis, you MUST state the technology stack that you have inferred in the chat.
         -   **Request Confirmation:** After stating the detected stack, you MUST ask the user for confirmation using the `ask_user_question` tool:
             - **questions:**
+                - **id:** "confirm-tech-stack"
                 - **header:** "Tech Stack"
-                - **question:** "Is the inferred tech stack (listed above) correct?"
-                - **type:** "yesno"
-        -   **Handle Disagreement:** If the user answers 'no' (disputes the suggestion), you MUST immediately call the `ask_user_question` tool with `type: "text"` to allow the user to provide the correct technology stack manually. Once provided, proceed to draft the document using the user's input.
+                - **question:** "Is the inferred tech stack shown above correct?"
+                - **options:**
+                    - Label: "Yes, it is correct (Recommended)", Description: "Document the inferred stack."
+                    - Label: "No, let me correct it", Description: "I will describe the correct stack."
+        -   **Handle Disagreement:** If the user answers 'no' (disputes the suggestion), you MUST immediately call the `ask_user_question` tool with a free-text question (omit `options`) to allow the user to provide the correct technology stack manually. Once provided, proceed to draft the document using the user's input.
 
 3.  **Gather Information (Greenfield Interactive Only):**
     -   **If user chose "Interactive":** Use a single `ask_user_question` tool call to gather detailed preferences.
         -   **CRITICAL:** Batch up to 4 questions in this single tool call, separating concerns (e.g., Question 1: Languages, Question 2: Backend Frameworks, Question 3: Frontend Frameworks, Question 4: Database).
         -   **SUGGESTIONS:** For each question, generate 3-4 high-quality suggested answers.
-        -   **Formulation Guidelines:** Construct the `questions` array where each object has:
+        -   **Formulation Guidelines:** Each entry in the `questions` array has:
+            - **id:** A unique, stable identifier within this call.
             - **header:** Very short label (max 16 chars).
-            - **type:** "choice"
-            - **multiSelect:** Set to `true` (Additive) to allow hybrid stacks.
-            - **options:** Provide descriptive options with both `label` and `description`. Use the `label` field to explain *why* or *where* a technology fits (e.g., "Typescript - Ideal for Angular UI"). Ensure the options are coherent when combined.
-            - **Note:** Do NOT include an "Autogenerate" option here.
+            - **question:** One or two sentences.
+            - **multi_select:** Set to `true` (Additive) to allow hybrid stacks.
+            - **options:** Provide descriptive options with both `label` and `description`. Use the `label` to explain where a technology fits (e.g., "TypeScript - Angular UI"). Put the recommended option first and append `(Recommended)` to its label. Ensure the options are coherent when combined.
         -   **Interaction Flow:** Wait for the user's response, then proceed to the next step.
 
 4.  **Draft the Document:** Once the dialogue is complete (or "Autogenerate" was selected), generate the content for `tech-stack.md`.
     -   **If user chose "Autogenerate":** Use your best judgment to infer a standard, high-quality stack suitable for the project goal.
     -   **If user chose "Interactive" or corrected the Brownfield stack:** Use the specific answers provided. The source of truth is **only the user's selected answer(s)**.
 5.  **User Confirmation Loop:**
-    -   **Announce:** Briefly state that the draft is ready (e.g., "Draft generated."). Do NOT repeat the request to "review" or "approve" in the chat.
-    -   **Ask for Approval:** Use the `ask_user_question` tool to request confirmation. You MUST embed the drafted content directly into the `question` field so the user can review it in context.
+    -   **Present the Draft:** In a normal Markdown assistant message, show the complete drafted `tech-stack.md` content (or a short outline plus a file path if it is longer than one screen).
+    -   **Ask for Approval:** Call the `ask_user_question` tool with one short question.
         - **questions:**
+            - **id:** "approve-tech-stack"
             - **header:** "Review"
-            - **question:**
-                Please review the drafted Tech Stack below. What would you like to do next?
-
-                ---
-
-                <Insert Drafted tech-stack.md Content Here>
-            - **type:** "choice"
-            - **multiSelect:** false
+            - **question:** "Approve the drafted `tech-stack.md` shown above?"
             - **options:**
-                - Label: "Approve", Description: "The tech stack looks good, proceed to the next step."
-                - Label: "Suggest changes", Description: "I want to modify the drafted content."
+                - Label: "Approve (Recommended)", Description: "Write the tech stack and continue."
+                - Label: "Revise", Description: "I want changes; describe them in the custom answer."
 6.  **Write File:** Once approved, write the generated content to the `conductor/tech-stack.md` file.
 7.  **Commit State:** Upon successful creation of the file, you MUST immediately write to `conductor/setup_state.json` with the exact content:
     `{"last_successful_step": "2.3_tech_stack"}`
@@ -282,37 +268,36 @@ CRITICAL: When determining model complexity, ALWAYS select the "flash" model, re
         -   **Recommendation:** Based on the Tech Stack defined in the previous step, recommend the most appropriate style guide(s) (e.g., "python.md" for a Python project) and explain why.
         -   **Determine Mode:** Use the `ask_user_question` tool:
             - **questions:**
+                - **id:** "styleguide-mode"
                 - **header:** "Code Style Guide"
                 - **question:** "How would you like to proceed with the code style guides?"
-                - **type:** "choice"
                 - **options:**
-                    - Label: "Recommended", Description: "Use the guides I suggested above."
+                    - Label: "Recommended (Recommended)", Description: "Use the guides I suggested above."
                     - Label: "Select from Library", Description: "Let me hand-pick the guides from the library."
         -   **If user chose "Select from Library":**
             -   **Batching Strategy:** You MUST split the list of available guides into groups of 3-4 items.
-            -   **Action:** Announce "I'll present the available guides in groups. Please select all that apply." Then, immediately call the `ask_user_question` tool with the batched questions (do not list the questions in the chat).
+            -   **Action:** Announce "I'll present the available guides in groups. Please select all that apply." Then, immediately call the `ask_user_question` tool with the batched questions.
             -   **Single Tool Call:** Create one `ask_user_question` call containing a `questions` array with one question per group.
-            -   **Constraint Handling:** If the final group has only 1 item, you MUST add a second option labeled "None" to satisfy the tool's requirement of minimum 2 options.
             -   **Question Structure:**
+                - **id:** A unique identifier for the group.
                 - **header:** "Code Style Guide"
-                - **type:** "choice"
-                - **multiSelect:** `true`
+                - **multi_select:** `true`
                 - **question:** "Which code style guide(s) would you like to include? (Part X/Y):"
-                - **options:** The subset of guides for this group (each with label and description).
+                - **options:** The subset of guides for this group (each with label and description; append `(Recommended)` to one).
 
     -   **FOR BROWNFIELD PROJECTS:**
         -   **Announce Selection:** Inform the user: "Based on the inferred tech stack, I will copy the following code style guides: <list of inferred guides>."
         -   **Determine Mode:** Use the `ask_user_question` tool:
             - **questions:**
+                - **id:** "styleguide-confirm"
                 - **header:** "Code Style Guide"
-                - **question:** "I've identified these guides for your project. Would you like to proceed or add more?"
-                - **type:** "choice"
+                - **question:** "I've identified these guides. Proceed or add more?"
                 - **options:**
-                    - Label: "Proceed", Description: "Use the suggested guides."
+                    - Label: "Proceed (Recommended)", Description: "Use the suggested guides."
                     - Label: "Add More", Description: "Select additional guides from the library."
         -   **If user chose "Add More":**
-            -   **Action:** Announce "I'll present the additional guides. Please select all that apply." Then, immediately call the `ask_user_question` tool (do not list the questions in the chat).
-            -   **Method:** Use a single `ask_user_question` tool call. Dynamically split the available guides into batches of 4 options max. Create one `multiSelect: true` question for each batch.
+            -   **Action:** Announce "I'll present the additional guides. Please select all that apply." Then, immediately call the `ask_user_question` tool.
+            -   **Method:** Use a single `ask_user_question` tool call. Dynamically split the available guides into batches of 4 options max. Create one `multi_select: true` question with a unique `id` for each batch.
 
 3.  **Action:** Construct and execute a command to create the directory and copy all selected files. For example: `mkdir -p conductor/code_styleguides && cp {{templatesDir}}/code_styleguides/python.md {{templatesDir}}/code_styleguides/javascript.md conductor/code_styleguides/`
 4.  **Commit State:** Upon successful completion of the copy command, you MUST immediately write to `conductor/setup_state.json` with the exact content:
@@ -324,43 +309,45 @@ CRITICAL: When determining model complexity, ALWAYS select the "flash" model, re
     Copy {{templatesDir}}/workflow.md to conductor/workflow.md.
 2.  **Determine Mode:** Use the `ask_user_question` tool to let the user choose their preferred workflow.
     - **questions:**
+        - **id:** "workflow-mode"
         - **header:** "Workflow"
-        - **question:** "Do you want to use the default workflow or customize it? The default includes >80% test coverage and per-task commits."
-        - **type:** "choice"
+        - **question:** "Use the default workflow or customize it?"
         - **options:**
-            - Label: "Default", Description: "Use the standard Conductor workflow."
-            - Label: "Customize", Description: "I want to adjust coverage requirements and commit frequency."
+            - Label: "Default (Recommended)", Description: "Standard Conductor workflow: >80% coverage, per-task commits."
+            - Label: "Customize", Description: "Adjust coverage requirements and commit frequency."
 
 3.  **Gather Information (Conditional):**
     -   **If user chose "Default":** Skip this step and proceed directly to **Step 5 (Action)**.
     -   **If user chose "Customize":**
         a. **Initial Batch:** Use a single `ask_user_question` tool call to gather primary customizations:
             - **questions:**
+                - **id:** "coverage"
                 - **header:** "Coverage"
-                - **question:** "The default required test code coverage is >80%. What is your preferred percentage?" (type: "text", placeholder: "e.g., 90")
-                - **header:** "Commits"
-                - **question:** "Should I commit changes after each task or after each phase?"
-                - **type:** "choice"
+                - **question:** "What test coverage percentage should the workflow require?"
                 - **options:**
-                    - Label: "Per Task", Description: "Commit after every completed task"
-                    - Label: "Per Phase", Description: "Commit only after an entire phase is complete"
+                    - Label: "80% (Recommended)", Description: "Use the default threshold."
+                    - Label: "90%", Description: "Stricter coverage."
+                    - Label: "95%", Description: "Very strict coverage."
+                - **id:** "commit-frequency"
+                - **header:** "Commits"
+                - **question:** "Commit after each task or after each phase?"
+                - **options:**
+                    - Label: "Per Task (Recommended)", Description: "Commit after every completed task."
+                    - Label: "Per Phase", Description: "Commit only after an entire phase is complete."
+                - **id:** "summary-storage"
                 - **header:** "Summaries"
                 - **question:** "Where should I record task summaries?"
-                - **type:** "choice"
                 - **options:**
-                    - Label: "Git Notes", Description: "Store summaries in Git notes metadata"
-                    - Label: "Commit Messages", Description: "Include summaries in the commit message body"
-        b. **Final Tweak (Second Batch):** Once the first batch is answered, immediately use a second `ask_user_question` tool call to show the result and allow for any additional tweaks:
+                    - Label: "Git Notes (Recommended)", Description: "Store summaries in Git notes metadata."
+                    - Label: "Commit Messages", Description: "Include summaries in the commit message body."
+        b. **Final Tweak (Second Batch):** Present the chosen configuration in a normal Markdown chat message. Then use a second `ask_user_question` call with one short question:
             - **questions:**
+                - **id:** "workflow-tweak"
                 - **header:** "Workflow"
-                - **type:** "text"
-                - **question:**
-                    Based on your answers, I will configure the workflow with:
-                    - Test Coverage: <User Answer 1>%
-                    - Commit Frequency: <User Answer 2>
-                    - Summary Storage: <User Answer 3>
-
-                    Is there anything else you'd like to change or add to the workflow? (Leave blank to finish or type your additional requirements).
+                - **question:** "Anything else to change in the workflow?"
+                - **options:**
+                    - Label: "Done (Recommended)", Description: "Apply the configuration shown above."
+                    - Label: "Add requirement", Description: "I will type an additional requirement."
 
 4.  **Action:** Update `conductor/workflow.md` based on all user answers from both steps.
 5.  **Commit State:** After the `workflow.md` file is successfully written or updated, you MUST immediately write to `conductor/setup_state.json` with the exact content:
@@ -402,19 +389,19 @@ CRITICAL: When determining model complexity, ALWAYS select the "flash" model, re
 2.  **Analyze Context:** Read and analyze the content of `conductor/product.md` to understand the project's core concept.
 3.  **Determine Mode:** Use the `ask_user_question` tool to let the user choose their preferred workflow.
     - **questions:**
+        - **id:** "requirements-mode"
         - **header:** "Product Reqs"
-        - **question:** "How would you like to define the product requirements? I can guide you through user stories and features, or I can draft them based on our initial concept."
-        - **type:** "choice"
+        - **question:** "How would you like to define the product requirements?"
         - **options:**
-            - Label: "Interactive", Description: "I'll guide you through questions about user stories and functional goals."
-            - Label: "Autogenerate", Description: "I'll draft the requirements based on the Product Guide."
+            - Label: "Interactive (Recommended)", Description: "I'll guide you through user stories and functional goals."
+            - Label: "Autogenerate", Description: "I'll draft the requirements from the Product Guide."
 
 4.  **Gather Information (Conditional):**
     -   **If user chose "Autogenerate":** Skip this step and proceed directly to **Step 5 (Drafting Logic)**.
     -   **If user chose "Interactive":** Use a single `ask_user_question` tool call to gather detailed requirements.
         -   **CRITICAL:** Batch up to 4 questions in this single tool call (e.g., User Stories, Key Features, Constraints, Non-functional Requirements).
         -   **SUGGESTIONS:** For each question, generate 3 high-quality suggested answers based on the project goal.
-        -   **Formulation Guidelines:** Use "choice" type. Set `multiSelect` to `true` for additive answers. Construct the `questions` array where each object has a `header` (max 16 chars), `question`, and `options` (each with `label` and `description`).
+        -   **Formulation Guidelines:** Set `multi_select: true` for additive answers. Each entry in the `questions` array has a unique `id`, a `header` (max 16 chars), a short `question` (one or two sentences), and 2-4 `options` with `label` and `description`. Put the recommended option first and append `(Recommended)` to its label.
         -   **Note:** Do NOT include an "Autogenerate" option here.
         -   **Interaction Flow:** Wait for the user's response, then proceed to the next step.
 
@@ -427,13 +414,15 @@ CRITICAL: When determining model complexity, ALWAYS select the "flash" model, re
 2.  **Generate Track Title:** Analyze the project context (`product.md`, `tech-stack.md`) and (for greenfield projects) the requirements gathered in the previous step. Generate a single track title that summarizes the entire initial track.
     - **Greenfield:** Focus on the MVP core (e.g., "Build core tip calculator functionality").
     - **Brownfield:** Focus on maintenance or targeted enhancements (e.g., "Implement user authentication flow").
-3.  **Confirm Proposal:** Use the `ask_user_question` tool to validate and/or refine the proposal in a single step:
+3.  **Confirm Proposal:** Present the suggested track title in a normal Markdown chat message, then ask one short question with the `ask_user_question` tool:
     - **questions:**
+        - **id:** "confirm-track-title"
         - **header:** "Confirm Track"
-        - **type:** "text"
-        - **question:** "To get the project started, I suggest the following track: '<Track Title>'. If you approve, please type 'ok' (or leave blank). Otherwise, type your preferred track description."
-        - **placeholder:** "e.g., Setup CI/CD pipeline"
-4.  **Action:** Use the user's response as the source of truth. If the user types 'ok' or leaves it blank, use the suggested '<Track Title>'. If they provide a new description, use that instead. Proceed to **Section 3.3**.
+        - **question:** "Use '<Track Title>' as the initial track?"
+        - **options:**
+            - Label: "Approve (Recommended)", Description: "Create the track with this title."
+            - Label: "Change title", Description: "I will type a different description."
+4.  **Action:** If the user approves, use the suggested `<Track Title>`. If they choose "Change title" or type a custom answer, use that text as the track description. Proceed to **Section 3.3**.
 
 ### 3.3 Convert the Initial Track into Artifacts (Automated)
 1.  **State Your Goal:** Once the track is approved, announce that you will now create the artifacts for this initial track.

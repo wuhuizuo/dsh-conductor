@@ -35,36 +35,36 @@ CRITICAL: You must validate the success of every tool call. If any tool call fai
 
     *   **PATH A: Direct Confirmation**
         1.  Find the specific track, phase, or task the user referenced in the **Tracks Registry** or **Implementation Plan** files (resolved via **Universal File Resolution Protocol**).
-        2.  Immediately call the `ask_user_question` tool to confirm the selection (do not repeat the question in the chat):
+        2.  Immediately call the `ask_user_question` tool to confirm the selection:
             - **questions:**
+                - **id:** "confirm-revert-target"
                 - **header:** "Confirm"
-                - **question:** "You asked to revert the [Track/Phase/Task]: '[Description]'. Is this correct?"
-                - **type:** "yesno"
-        3.  If "yes", establish this as the `target_intent` and proceed to Phase 2. If "no", immediately call the `ask_user_question` tool to ask clarifying questions (do not repeat the question in the chat):
+                - **question:** "Revert [Track/Phase/Task]: '[Description]'. Is this correct?"
+                - **options:**
+                    - Label: "Yes, revert it (Recommended)", Description: "Continue to the revert plan."
+                    - Label: "No, choose again", Description: "I will describe the correct target."
+        3.  If "yes", establish this as the `target_intent` and proceed to Phase 2. If "no", immediately call the `ask_user_question` tool to ask clarifying questions:
             - **questions:**
+                - **id:** "clarify-revert-target"
                 - **header:** "Clarify"
-                - **question:** "I'm sorry, I misunderstood. Please describe the Track, Phase, or Task you would like to revert."
-                - **type:** "text"
+                - **question:** "Which Track, Phase, or Task do you want to revert?"
 
     *   **PATH B: Guided Selection Menu**
         1.  **Identify Revert Candidates:** Your primary goal is to find relevant items for the user to revert.
             *   **Scan All Plans:** You MUST read the **Tracks Registry** and every track's **Implementation Plan** (resolved via **Universal File Resolution Protocol** using the track's index file).
             *   **Prioritize In-Progress:** First, find the **top 3** most relevant Tracks, Phases, or Tasks marked as "in-progress" (`[~]`).
             *   **Fallback to Completed:** If and only if NO in-progress items are found, find the **3 most recently completed** Tasks and Phases (`[x]`).
-        2.  **Present a Unified Hierarchical Menu:** Immediately call the `ask_user_question` tool to present the results (do not list them in the chat first):
+        2.  **Present a Unified Hierarchical Menu:** Immediately call the `ask_user_question` tool to present the results:
             - **questions:**
+                - **id:** "select-revert-item"
                 - **header:** "Select Item"
-                - **question:** "I found multiple in-progress items (or recently completed items). Please choose which one to revert:"
-                - **type:** "choice"
-                - **multiSelect:** false
-                - **options:** Provide the identified items as options. Group them by Track in the description if possible. **CRITICAL:** You MUST limit this array to a maximum of 4 items. 
-                    - **Example Option Label:** "[Task] Update user model", **Description:** "Track: track_20251208_user_profile"
+                - **question:** "Which item should I revert?"
+                - **options:** Provide the identified items as options. Group them by Track in the description if possible. **CRITICAL:** You MUST limit this array to a maximum of 4 items. Put the most likely item first and append `(Recommended)` to its label.
+                    - **Example Option Label:** "[Task] Update user model (Recommended)", **Description:** "Track: track_20251208_user_profile"
                     - **Example Option Label:** "[Phase] Implement Backend", **Description:** "Track: track_20251208_user_profile"
-                    - **Note:** The "Other" option is automatically added by the tool.
         3.  **Process User's Choice:**
             *   If the user selects a specific item from the list, set this as the `target_intent` and proceed directly to Phase 2.
-            *   If the user selects "Other" (automatically added for "choice") or the explicit "Other" option provided, you must engage in a dialogue to find the correct target using `ask_user_question` tool with a single question of `type: "text"` in the `questions` array.
-                * Once a target is identified, loop back to Path A for final confirmation.
+            *   If the user types a custom answer naming another target, use that text as the target and loop back to Path A for final confirmation.
 
 4.  **Halt on Failure:** If no completed items are found to present as options, announce this and halt.
 
@@ -103,23 +103,22 @@ CRITICAL: You must validate the success of every tool call. If any tool call fai
     > `  - <sha_plan_commit> ('conductor(plan): Mark task complete')`
     > *   **Action:** I will run `git revert` on these commits in reverse order.
 
-2.  **Final Go/No-Go:** Immediately call the `ask_user_question` tool to ask for final confirmation (do not repeat the question in the chat):
+2.  **Final Go/No-Go:** Immediately call the `ask_user_question` tool to ask for final confirmation:
     - **questions:**
+        - **id:** "confirm-revert-plan"
         - **header:** "Confirm Plan"
-        - **question:** "Do you want to proceed with the drafted plan?"
-        - **type:** "choice"
-        - **multiSelect:** false
+        - **question:** "Proceed with the revert plan shown above?"
         - **options:**
-            - Label: "Approve", Description: "Proceed with the revert actions."
+            - Label: "Approve (Recommended)", Description: "Proceed with the revert actions."
             - Label: "Revise", Description: "I want to change the revert plan."
 
 3.  **Process User Choice:**
     - If "Approve", proceed to Phase 4.
-    - If "Revise", immediately call the `ask_user_question` tool to get the correct plan (do not repeat the question in the chat):
+    - If "Revise", immediately call the `ask_user_question` tool to get the correct plan:
         - **questions:**
+            - **id:** "revise-revert-plan"
             - **header:** "Revise"
-            - **question:** "Please describe the changes needed for the revert plan."
-            - **type:** "text"
+            - **question:** "What should change in the revert plan?"
 
 ---
 

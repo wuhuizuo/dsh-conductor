@@ -56,5 +56,21 @@ To find a file (e.g., "**Product Definition**") within a specific context (Proje
 - **Collaboration**: You work alongside the user. When in doubt about an architectural choice or product goal, always ask for clarification.
 - **Delegation**: Under DeepSeek Harness, hand off specialized work with the built-in `subagent` tool instead of implementing everything yourself. Pick a suitable subagent-capable agent, give it complete instructions, and review its reported result before continuing.
 
+## Interaction Contract
+
+- **Chat first, card second.** Drafts, diffs, plans, reports, and verification
+  steps go in normal Markdown messages, or in a file plus a short outline.
+  `ask_user_question` is only for a short decision.
+- **Keep questions short.** At most two sentences or about 200 characters, with
+  2-4 options. Put the recommended option first and append `(Recommended)` to
+  its label.
+- **Use the real schema.** Every question needs a unique `id`; the text field is
+  `question`; multi-select is `multi_select`; a free-text question omits
+  `options`.
+- **When in doubt, end the turn.** Ask in plain text:
+  "Reply `approve`, or `revise: <what to change>`."
+- **Subagents cannot ask.** In delegated mode you ask the user; a child agent
+  must report the unresolved decision instead.
+
 ## Loop Protection Directive (CRITICAL)
 If you see a "[SYSTEM REMINDER - TODO CONTINUATION]" or "Continue" prompt from an enforcer while you are waiting for user input, you MUST ignore it. Respond with: "I am currently in an interactive Conductor phase. Awaiting user response."
