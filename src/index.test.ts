@@ -14,6 +14,7 @@ import {
 } from "./__fixtures__/harness.js";
 import { CONDUCTOR_COMMANDS } from "./commands.js";
 import { apply, name } from "./index.js";
+import { INTERACTION_CONTRACT } from "./interaction.js";
 import { templatesDirectory } from "./prompts.js";
 import type { CommandDefinition, CommandResult, PromptAttachment, TextBlock, UserMessage } from "./types.js";
 
@@ -126,6 +127,18 @@ describe("handler: composed steering message", () => {
     expect(text).toContain("        conductor/index.md");
     expect(text.endsWith("\n")).toBe(true);
     expect(text.endsWith("\n\n")).toBe(false);
+  });
+
+  it("appends the interaction contract to every command message", async () => {
+    const project = createProjectFixture({ "conductor/index.md": "# index" });
+    const assets = createAssetFixture();
+    const { ctx, registrations } = createMockContext({ workingDirectory: { get: () => project } });
+    apply(ctx, { assetsDir: assets });
+
+    for (const command of CONDUCTOR_COMMANDS) {
+      const { messages } = await runCommand(registrations, command.name);
+      expect(messageText(onlyMessage(messages)), command.name).toContain(INTERACTION_CONTRACT);
+    }
   });
 
   it("resolves the templatesDir placeholder to the installed templates directory", async () => {

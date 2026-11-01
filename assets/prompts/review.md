@@ -39,22 +39,27 @@ CRITICAL: You must validate the success of every tool call. If any tool call fai
 2.  **Auto-Detect Scope:**
     -   If no input, read the **Tracks Registry**.
     -   Look for a track marked as `[~] In Progress`.
-    -   If one exists, immediately call the `ask_user_question` tool to confirm (do not repeat the question in the chat):
+    -   If one exists, immediately call the `ask_user_question` tool to confirm:
         - **questions:**
+            - **id:** "review-in-progress-track"
             - **header:** "Review Track"
-            - **question:** "Do you want to review the in-progress track '<track_name>'?"
-            - **type:** "yesno"
-    -   If no track is in progress, or user says "no", immediately call the `ask_user_question` tool to ask for the scope (do not repeat the question in the chat):
+            - **question:** "Review the in-progress track '<track_name>'?"
+            - **options:**
+                - Label: "Yes, review it (Recommended)", Description: "Review this track's changes."
+                - Label: "No, choose scope", Description: "I will name another scope."
+    -   If no track is in progress, or user says "no", immediately call the `ask_user_question` tool to ask for the scope:
         - **questions:**
+            - **id:** "review-scope"
             - **header:** "Select Scope"
-            - **question:** "What would you like to review?"
-            - **type:** "text"
-            - **placeholder:** "Enter track name, or 'current' for uncommitted changes"
-3.  **Confirm Scope:** Ensure you and the user agree on what is being reviewed by immediately calling the `ask_user_question` tool (do not repeat the question in the chat):
+            - **question:** "What should I review? Name a track, or say 'current' for uncommitted changes."
+3.  **Confirm Scope:** Ensure you and the user agree on what is being reviewed by immediately calling the `ask_user_question` tool:
     - **questions:**
+        - **id:** "confirm-scope"
         - **header:** "Confirm Scope"
-        - **question:** "I will review: '<identified_scope>'. Is this correct?"
-        - **type:** "yesno"
+        - **question:** "I will review '<identified_scope>'. Is this correct?"
+        - **options:**
+            - Label: "Yes, proceed (Recommended)", Description: "Start the review."
+            - Label: "No, change scope", Description: "I will name a different scope."
 
 ### 2.2 Retrieve Context
 1.  **Load Project Context:**
@@ -72,11 +77,7 @@ CRITICAL: You must validate the success of every tool call. If any tool call fai
             -   Run `git diff <revision_range>` to get the full context in one go.
             -   Proceed to "Analyze and Verify".
         -   **Large Changes (> 300 lines):**
-            -   **Confirm:** Immediately call the `ask_user_question` tool to confirm before proceeding with a large review (do not repeat the question in the chat):
-                - **questions:**
-                    - **header:** "Large Review"
-                    - **question:** "This review involves >300 lines of changes. I will use 'Iterative Review Mode' which may take longer. Proceed?"
-                    - **type:** "yesno"
+            -   **Proceed without a confirmation card:** iterative review is an internal step.
             -   **List Files:** Run `git diff --name-only <revision_range>`.
             -   **Iterate:** For each source file (ignore locks/assets):
                 1.  Run `git diff <revision_range> -- <file_path>`.
@@ -139,16 +140,15 @@ CRITICAL: You must validate the success of every tool call. If any tool call fai
     -   If no issues found:
         - Announce: "Everything looks great! I don't see any issues."
 2.  **Action:**
-    -   **If issues found:** Immediately call the `ask_user_question` tool (do not repeat the question in the chat):
+    -   **If issues found:** Immediately call the `ask_user_question` tool:
         - **questions:**
+            - **id:** "review-decision"
             - **header:** "Decision"
-            - **question:** "How would you like to proceed with the findings?"
-            - **type:** "choice"
-            - **multiSelect:** false
+            - **question:** "How should I handle these findings?"
             - **options:**
-                - Label: "Apply Fixes", Description: "Automatically apply the suggested code changes."
-                - Label: "Manual Fix", Description: "Stop so you can fix issues yourself."
-                - Label: "Complete Track", Description: "Ignore warnings and proceed to cleanup."
+                - Label: "Apply fixes (Recommended)", Description: "Apply the suggested code changes."
+                - Label: "Manual fix", Description: "Stop so I can fix them myself."
+                - Label: "Complete track", Description: "Ignore warnings and proceed to cleanup."
         -   **If "Apply Fixes":** Apply the code modifications suggested in the findings using file editing tools. Then Proceed to next step.
         -   **If "Manual Fix":** Terminate operation to allow user to edit code.
         -   **If "Complete Track":** Proceed to the next step.
@@ -162,19 +162,25 @@ CRITICAL: You must validate the success of every tool call. If any tool call fai
     -   If NO changes are detected, proceed to '3.3 Track Cleanup'.
     -   If changes are detected:
         a. **Check for Track Context:**
-            - If you are NOT reviewing a specific track (i.e., you don't have a `plan.md` in context), immediately call the `ask_user_question` tool (do not repeat the question in the chat):
+            - If you are NOT reviewing a specific track (i.e., you don't have a `plan.md` in context), immediately call the `ask_user_question` tool:
                 - **questions:**
+                    - **id:** "commit-review-changes"
                     - **header:** "Commit Changes"
-                    - **question:** "I've detected uncommitted changes. Should I commit them?"
-                    - **type:** "yesno"
+                    - **question:** "Commit the review changes?"
+                    - **options:**
+                        - Label: "Yes, commit (Recommended)", Description: "Commit all review changes."
+                        - Label: "No, leave them", Description: "Leave the working tree as is."
                 - If 'yes', stage all changes and commit with `fix(conductor): Apply review suggestions <brief description of changes>`.
                 - Proceed to '3.3 Track Cleanup'.
         b. **Handle Track-Specific Changes:**
-            i.   **Confirm with User:** Immediately call the `ask_user_question` tool (do not repeat the question in the chat):
+            i.   **Confirm with User:** Immediately call the `ask_user_question` tool:
                 - **questions:**
+                    - **id:** "commit-and-track-review"
                     - **header:** "Commit & Track"
-                    - **question:** "I've detected uncommitted changes from the review process. Should I commit these and update the track's plan?"
-                    - **type:** "yesno"
+                    - **question:** "Commit these changes and update the track's plan?"
+                    - **options:**
+                        - Label: "Yes, commit and track (Recommended)", Description: "Commit the fix and record it in `plan.md`."
+                        - Label: "No, skip", Description: "Leave the changes uncommitted."
             ii.  **If Yes:**
                  - **Update Plan (Add Review Task):**
                    - Read the track's `plan.md`.
@@ -201,16 +207,15 @@ CRITICAL: You must validate the success of every tool call. If any tool call fai
 
 1.  **Context Check:** If you are NOT reviewing a specific track (e.g., just reviewing current changes without a track context), SKIP this entire section.
 
-2.  **Ask for User Choice:** Immediately call the `ask_user_question` tool to prompt the user (do not repeat the question in the chat):
+2.  **Ask for User Choice:** Immediately call the `ask_user_question` tool to prompt the user:
     - **questions:**
+        - **id:** "review-cleanup"
         - **header:** "Track Cleanup"
-        - **question:** "Review complete. What would you like to do with track '<track_name>'?"
-        - **type:** "choice"
-        - **multiSelect:** false
+        - **question:** "Review complete. What should happen to track '<track_name>'?"
         - **options:**
-            - Label: "Archive", Description: "Move the track's folder to `conductor/archive/` and remove it from the tracks file."
-            - Label: "Delete", Description: "Permanently delete the track's folder and remove it from the tracks file."
-            - Label: "Skip", Description: "Do nothing and leave it in the tracks file."
+            - Label: "Archive (Recommended)", Description: "Move the folder to `conductor/archive/` and update the tracks file."
+            - Label: "Delete", Description: "Permanently delete the folder and update the tracks file."
+            - Label: "Skip", Description: "Leave it in the tracks file."
 
 3.  **Handle User Response:**
     *   **If "Archive":**
@@ -220,11 +225,14 @@ CRITICAL: You must validate the success of every tool call. If any tool call fai
         iv.  **Commit:** Stage registry and archive. Commit: `chore(conductor): Archive track '<track_name>'`.
         v.   **Announce:** "Track '<track_name>' archived."
     *   **If "Delete":**
-        i.   **Confirm:** Immediately call the `ask_user_question` tool to ask for final confirmation (do not repeat the warning in the chat):
+        i.   **Confirm:** Immediately call the `ask_user_question` tool to ask for final confirmation:
             - **questions:**
+                - **id:** "confirm-review-delete"
                 - **header:** "Confirm"
-                - **question:** "WARNING: This is an irreversible deletion. Do you want to proceed?"
-                - **type:** "yesno"
+                - **question:** "Permanently delete track '<track_name>'? This cannot be undone."
+                - **options:**
+                    - Label: "No, keep it (Recommended)", Description: "Cancel the deletion."
+                    - Label: "Yes, delete it", Description: "Delete the folder and update the tracks file."
         ii.  **If yes:** Delete track folder, remove from **Tracks Registry**, commit (`chore(conductor): Delete track '<track_name>'`), announce success.
         iii. **If no:** Cancel.
     *   **If "Skip":** Leave track as is.
