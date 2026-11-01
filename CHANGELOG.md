@@ -6,6 +6,13 @@ This file is maintained by [release-please](https://github.com/googleapis/releas
 Conventional Commits on `main`, proposes the next version, and writes the release section when the
 release pull request is merged. Do not edit released sections by hand.
 
+## [0.1.3](https://github.com/wuhuizuo/dsh-conductor/compare/v0.1.2...v0.1.3) (2026-11-01)
+
+
+### Bug Fixes
+
+* **prompts:** keep long content out of the question card ([#12](https://github.com/wuhuizuo/dsh-conductor/issues/12)) ([a729f7d](https://github.com/wuhuizuo/dsh-conductor/commit/a729f7d1704ef8a7fffcc2e95cf5c016eb9f065a))
+
 ## [0.1.2](https://github.com/wuhuizuo/dsh-conductor/compare/v0.1.1...v0.1.2) (2026-10-31)
 
 

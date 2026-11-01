@@ -1,6 +1,6 @@
 {
   "name": "@wuhuizuo/dsh-conductor",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Context-Driven Development for DeepSeek Harness: the six Conductor commands plus a conductor agent preset that enforce Context -> Spec & Plan -> Implement.",
   "type": "module",
   "license": "Apache-2.0",
