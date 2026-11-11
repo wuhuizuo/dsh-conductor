@@ -65,7 +65,7 @@ do not use `web`; the profile is initialized on first use.
 Pin a released version when you need reproducibility:
 
 ```bash
-dsh plugin --profile web add @wuhuizuo/dsh-conductor@0.1.0
+dsh plugin --profile web add @wuhuizuo/dsh-conductor@0.1.3
 ```
 
 Verify the bundle is enabled and both patch layers composed:
@@ -104,7 +104,7 @@ exactly what gets published, pack it and install the tarball instead:
 
 ```bash
 npm pack
-dsh plugin --profile web add "$PWD/wuhuizuo-dsh-conductor-0.1.0.tgz"
+dsh plugin --profile web add "$PWD/wuhuizuo-dsh-conductor-0.1.3.tgz"
 ```
 
 See [INSTALL.md](https://github.com/wuhuizuo/dsh-conductor/blob/main/INSTALL.md) for a step-by-step guide, uninstalling, and troubleshooting.
@@ -348,7 +348,7 @@ Releases run fully automatically on `main` — no manual version bump, tag, or p
    trusted publishing (`npm publish --provenance --access public`, no long-lived token), and attaches
    `wuhuizuo-dsh-conductor-<version>.tgz` plus install instructions to the GitHub release.
 
-The pipeline is verified end to end: `0.1.0` was bootstrapped manually, and `0.1.1` / `0.1.2` were
+The pipeline is verified end to end: `0.1.0` was bootstrapped manually, and `0.1.1` / `0.1.2` / `0.1.3` were
 released and published by automation with SLSA provenance.
 
 Rules for maintainers:
